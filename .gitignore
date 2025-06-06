@@ -1,0 +1,12 @@
+# Ignore build directories
+build/
+
+# Ignore zephyr
+zephyr/
+bootloader/
+
+# Ignore python environment directories
+venv/
+.west/
+modules/
+tools/
