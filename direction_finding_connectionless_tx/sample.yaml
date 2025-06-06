@@ -1,0 +1,17 @@
+sample:
+  name: Direction Finding Connectionless Beacon
+tests:
+  sample.bluetooth.direction_finding_connectionless:
+    harness: bluetooth
+    platform_allow:
+      - nrf52833dk/nrf52833
+    tags: bluetooth
+    integration_platforms:
+      - nrf52833dk/nrf52833
+  sample.bluetooth.direction_finding_connectionless.aoa:
+    harness: bluetooth
+    extra_args: EXTRA_CONF_FILE="overlay-aoa.conf"
+    platform_allow:
+      - nrf52833dk/nrf52833
+    integration_platforms:
+      - nrf52833dk/nrf52833
