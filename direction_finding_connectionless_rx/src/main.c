@@ -12,13 +12,14 @@
 #include <zephyr/bluetooth/bluetooth.h>
 #include "aoa_calc.h"
 #include "ble.h"
+#include "est_pos.h"
 
-static void aoa_cb(int beacon_idx, double angle)
+static void aoa_cb(double angle)
 {
-	beacons[beacon_idx].aoa_samples[beacons[beacon_idx].write_idx] = angle;
-	beacons[beacon_idx].write_idx = (beacons[beacon_idx].write_idx + 1) % MAX_AOA_SAMPLES;
-	if (beacons[beacon_idx].sample_count < MAX_AOA_SAMPLES)
-		beacons[beacon_idx].sample_count++;
+	own_beacon.aoa_samples[own_beacon.write_idx] = angle;
+	own_beacon.write_idx = (own_beacon.write_idx + 1) % MAX_AOA_SAMPLES;
+	if (own_beacon.sample_count < MAX_AOA_SAMPLES)
+		own_beacon.sample_count++;
 	double angle_smooth;
 	smooth_aoa(angle, &angle_smooth);
 	printk("Smoothed z-axis AoA: %d degrees\n", (int)angle_smooth);
@@ -29,12 +30,12 @@ int main(void)
 
 	ble_ctx_t ble;
 	memset(&ble, 0, sizeof(ble));
-	ble.num_beacons = NUM_BEACONS;
-	bt_addr_le_from_str("FA:23:5E:09:F1:39", "random", &ble.beacon_addrs[0]);
+	bt_addr_le_from_str("FA:23:5E:09:F1:39", "random", &ble.own_beacon_addrs);
 	ble.aoa_cb = aoa_cb;
 	ble_init(&ble);
 
 	point2d_t position = {10.0, 50.0};
+	init_beacon();
 	init_beacons();
 
 	printk("Starting Connectionless Locator Demo\n");
@@ -77,18 +78,17 @@ int main(void)
 		printk("Waiting for periodic sync lost...\n");
 		ble_wait_for_sync_lost(&ble);
 		printk("Periodic sync lost.\n");
-
-		for (int i = 0; i < NUM_BEACONS; i++)
+		printk("AoA samples:\n");
+		int idx = own_beacon.write_idx;
+		for (int j = (own_beacon.sample_count - 5) >= 0 ? (own_beacon.sample_count - 5) : 0; j < own_beacon.sample_count; j++)
 		{
-			printk("Beacon %d AoA samples:\n", i);
-			int idx = beacons[i].write_idx;
-			for (int j = (beacons[i].sample_count - 5) >= 0 ? (beacons[i].sample_count - 5) : 0; j < beacons[i].sample_count; j++)
-			{
-				int real_idx = (idx + j) % MAX_AOA_SAMPLES;
-				printk("  %d\n", (int)beacons[i].aoa_samples[real_idx]);
-			}
+			int real_idx = (idx + j) % MAX_AOA_SAMPLES;
+			printk("  %d\n", (int)own_beacon.aoa_samples[real_idx]);
 		}
+
 		printk("Estimating position...\n");
+		beacons[0].aoa_samples[beacons[0].sample_count++] = own_beacon.aoa_samples[own_beacon.write_idx];
+		beacons[0].sample_count++;
 		point2d_t new_position;
 		if (estimate_position(position, &new_position))
 		{

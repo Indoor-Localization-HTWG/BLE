@@ -8,23 +8,19 @@
 #include <stdint.h>
 #include <zephyr/kernel.h>
 
-#define BLE_MAX_BEACONS 4
-
-typedef void (*ble_aoa_report_cb_t)(int beacon_idx, double angle);
+typedef void (*ble_aoa_report_cb_t)(double angle);
 
 typedef struct
 {
     struct bt_le_per_adv_sync_param sync_create_param;
     struct bt_le_per_adv_sync *adv_sync;
-    bt_addr_le_t beacon_addrs[BLE_MAX_BEACONS];
-    int num_beacons;
+    bt_addr_le_t own_beacon_addrs;
     bool per_adv_found;
     bool scan_enabled;
     bool sync_wait;
     bool sync_terminated;
     uint8_t per_sid;
     uint16_t sync_create_timeout;
-    int beacon_idx;
     struct k_sem sem_per_adv;
     struct k_sem sem_per_sync;
     struct k_sem sem_per_sync_lost;

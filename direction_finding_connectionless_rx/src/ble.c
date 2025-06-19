@@ -98,26 +98,9 @@ static void cte_recv_cb(struct bt_le_per_adv_sync *sync, const struct bt_df_per_
     struct bt_le_per_adv_sync_info info;
     bt_le_per_adv_sync_get_info(sync, &info);
 
-    int beacon_idx = -1;
-    for (int i = 0; i < ctx->num_beacons; i++)
-    {
-        if (bt_addr_le_cmp(&info.addr, &ctx->beacon_addrs[i]) == 0)
-        {
-            beacon_idx = i;
-            break;
-        }
-    }
-    if (beacon_idx >= 0 && ctx->aoa_cb)
-    {
-        ctx->aoa_cb(beacon_idx, angle);
-    }
+    ctx->aoa_cb(angle);
 
     ble_delete_sync(ctx);
-    ctx->beacon_idx++;
-    if (ctx->beacon_idx >= ctx->num_beacons)
-    {
-        ctx->beacon_idx = 0; // Reset index if we reached the end of the list
-    }
 }
 
 static void scan_recv(const struct bt_le_scan_recv_info *info, struct net_buf_simple *buf)
@@ -128,15 +111,6 @@ static void scan_recv(const struct bt_le_scan_recv_info *info, struct net_buf_si
     (void)memset(name, 0, sizeof(name));
     bt_data_parse(buf, data_cb, name);
     bt_addr_le_to_str(info->addr, le_addr, sizeof(le_addr));
-
-    // Only look for beacons in the context's list
-    if (ctx->num_beacons == 0)
-        return;
-    if (bt_addr_le_cmp(info->addr, &ctx->beacon_addrs[ctx->beacon_idx]) != 0)
-    {
-        printk("Scan: Ignoring device %s, not in beacon list\n", le_addr);
-        return; // Not our beacon, ignore
-    }
 
     if (!ctx->per_adv_found && info->interval != 0)
     {
@@ -169,7 +143,6 @@ void ble_init(ble_ctx_t *ctx)
     ctx->per_adv_found = false;
     ctx->sync_wait = false;
     ctx->sync_terminated = false;
-    ctx->beacon_idx = 0;
     bt_le_scan_cb_register(&scan_callbacks);
     bt_le_per_adv_sync_cb_register(&sync_callbacks);
 }

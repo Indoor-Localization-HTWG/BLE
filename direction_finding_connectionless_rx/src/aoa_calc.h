@@ -7,7 +7,6 @@
 #include <stdbool.h>
 
 #define MAX_AOA_SAMPLES 32
-#define NUM_BEACONS 2
 
 typedef struct
 {
@@ -19,18 +18,18 @@ typedef struct
 {
 	point2d_t position;
 	double angle; // Angle in degrees
-} beacon_t;
+} own_beacon_t;
 
-struct beacon_data
+struct own_beacon_data
 {
 	bt_addr_le_t addr;
 	double aoa_samples[MAX_AOA_SAMPLES];
 	int write_idx;
 	int sample_count;
-	beacon_t position;
+	own_beacon_t position;
 };
 
-extern struct beacon_data beacons[NUM_BEACONS];
+extern struct own_beacon_data own_beacon;
 
 // All functions now use return parameters and return void or bool for success
 bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report,
@@ -38,6 +37,6 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report,
 double normalize_angle_180(double angle);
 bool gradient_descent(point2d_t prev_xy, point2d_t *est_xy);
 bool estimate_position(point2d_t prev_xy, point2d_t *est_xy);
-void init_beacons(void);
+void init_beacon(void);
 
 #endif // AOA_CALC_H

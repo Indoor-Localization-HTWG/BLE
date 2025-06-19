@@ -15,4 +15,6 @@ target_sources(app PRIVATE
   src/aoa_calc.h
   src/ble.c
   src/ble.h
+  src/est_pos.c
+  src/est_pos.h
 )
