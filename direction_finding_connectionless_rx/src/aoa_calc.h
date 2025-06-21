@@ -26,21 +26,29 @@ typedef struct
 {
 	double x;
 	double y;
-} point2d_t;
+	double z;
+} point3d_t;
 
 typedef struct
 {
-	point2d_t position;
-	double angle; // Angle in degrees
-} own_beacon_t;
+	double yaw;	  // rototion Angle in degrees
+	double pitch; // Elevation angle in degrees
+} rot3d_t;
+
+typedef struct
+{
+	point3d_t position;
+	rot3d_t rotation;
+} beacon_t;
 
 struct own_beacon_data
 {
 	bt_addr_le_t addr;
-	double aoa_samples[MAX_AOA_SAMPLES];
+	double yaw[MAX_AOA_SAMPLES];
+	double pitch[MAX_AOA_SAMPLES];
 	int write_idx;
 	int sample_count;
-	own_beacon_t position;
+	beacon_t position;
 };
 
 extern struct own_beacon_data own_beacon;
@@ -50,8 +58,8 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report,
 				   uint8_t num_antennas, double *angle_deg);
 double normalize_angle_180(double angle);
 double deg2rad(double deg);
-bool gradient_descent(point2d_t prev_xy, point2d_t *est_xy);
-bool estimate_position(point2d_t prev_xy, point2d_t *est_xy);
+bool gradient_descent(point3d_t prev_xy, point3d_t *est_xy);
+bool estimate_position(point3d_t prev_xy, point3d_t *est_xy);
 void init_beacon(void);
 
 #endif // AOA_CALC_H

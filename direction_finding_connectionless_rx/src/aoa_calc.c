@@ -78,16 +78,27 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report,
 	return true;
 }
 
-void smooth_aoa(double new_angle, double *smoothed_angle)
+void smooth_aoa(double new_yaw, double new_pitch, double *smoothed_yaw, double *smoothed_pitch)
 {
-	aoa_window[aoa_idx] = new_angle;
-	aoa_idx = (aoa_idx + 1) % AOA_SMOOTH_WINDOW;
-	if (aoa_count < AOA_SMOOTH_WINDOW)
-		aoa_count++;
-	double sum = 0;
-	for (int i = 0; i < aoa_count; i++)
-		sum += aoa_window[i];
-	*smoothed_angle = sum / aoa_count;
+	static double yaw_window[AOA_SMOOTH_WINDOW];
+	static double pitch_window[AOA_SMOOTH_WINDOW];
+	static int idx = 0;
+	static int count = 0;
+
+	yaw_window[idx] = new_yaw;
+	pitch_window[idx] = new_pitch;
+	idx = (idx + 1) % AOA_SMOOTH_WINDOW;
+	if (count < AOA_SMOOTH_WINDOW)
+		count++;
+
+	double sum_yaw = 0.0, sum_pitch = 0.0;
+	for (int i = 0; i < count; i++)
+	{
+		sum_yaw += yaw_window[i];
+		sum_pitch += pitch_window[i];
+	}
+	*smoothed_yaw = sum_yaw / count;
+	*smoothed_pitch = sum_pitch / count;
 }
 
 void init_beacon(void)
@@ -96,5 +107,11 @@ void init_beacon(void)
 	bt_addr_le_from_str(beacon_adress, "random", &own_beacon.addr);
 	own_beacon.write_idx = 0;
 	own_beacon.sample_count = 0;
-	memset(own_beacon.aoa_samples, 0, sizeof(own_beacon.aoa_samples));
+	memset(own_beacon.yaw, 0, sizeof(own_beacon.yaw));
+	memset(own_beacon.pitch, 0, sizeof(own_beacon.pitch));
+	own_beacon.position.position.x = 0.0;
+	own_beacon.position.position.y = 0.0;
+	own_beacon.position.position.z = 0.0;
+	own_beacon.position.rotation.yaw = 0.0;
+	own_beacon.position.rotation.pitch = 0.0;
 }

@@ -63,9 +63,10 @@ void aoa_calc_test(void)
         printk("AoA calculation failed\n");
     }
 
-    double smoothed;
+    rot3d_t smoothed;
     smooth_aoa(angle, &smoothed);
-    printk("Smoothed AoA: %d e-2 deg\n", (int)(smoothed * 100));
+    printk("Smoothed AoA: %d e-2 deg\n", (int)(smoothed.yaw * 100));
+    printk("Smoothed pitch: %d e-2 deg\n", (int)(smoothed.pitch * 100));
 
     printk("AoA calculation test done\n");
 }

@@ -15,15 +15,17 @@
 #include "est_pos.h"
 #include "test/aoa_calc_test.h"
 
-static void aoa_cb(double angle)
+static void aoa_cb(double yaw, double pitch)
 {
-	own_beacon.aoa_samples[own_beacon.write_idx] = angle;
+	own_beacon.yaw[own_beacon.write_idx] = yaw;
+	own_beacon.pitch[own_beacon.write_idx] = pitch;
 	own_beacon.write_idx = (own_beacon.write_idx + 1) % MAX_AOA_SAMPLES;
 	if (own_beacon.sample_count < MAX_AOA_SAMPLES)
 		own_beacon.sample_count++;
 	double angle_smooth;
-	smooth_aoa(angle, &angle_smooth);
-	printk("Smoothed z-axis AoA: %d degrees\n", (int)angle_smooth);
+	smooth_aoa(yaw, pitch, &angle_smooth);
+	printk("Smoothed yaw AoA: %d degrees\n", (int)angle_smooth);
+	printk("Smoothed pitch AoA: %d degrees\n", (int)pitch);
 }
 bool test = false;
 int main(void)
@@ -40,7 +42,7 @@ int main(void)
 	ble.aoa_cb = aoa_cb;
 	ble_init(&ble);
 
-	point2d_t position = {10.0, 50.0};
+	point3d_t position = {10.0, 50.0};
 	init_beacon();
 	init_beacons();
 
@@ -91,23 +93,24 @@ int main(void)
 		{
 			// Calculate the index of the i-th most recent sample
 			int real_idx = (own_beacon.write_idx - count + i + MAX_AOA_SAMPLES) % MAX_AOA_SAMPLES;
-			printk("  %d\n", (int)own_beacon.aoa_samples[real_idx]);
+			printk("%d, %d\n", (int)own_beacon.yaw[real_idx], (int)own_beacon.pitch[real_idx]);
 		}
 
 		printk("Estimating position...\n");
 		if (own_beacon.sample_count > 0)
 		{
 			int last_idx = (own_beacon.write_idx - 1 + MAX_AOA_SAMPLES) % MAX_AOA_SAMPLES;
-			beacons[0].aoa_samples[beacons[0].write_idx] = own_beacon.aoa_samples[last_idx];
+			beacons[0].yaw[beacons[0].write_idx] = own_beacon.yaw[last_idx];
+			beacons[0].pitch[beacons[0].write_idx] = own_beacon.pitch[last_idx];
 			beacons[0].write_idx = (beacons[0].write_idx + 1) % MAX_AOA_SAMPLES;
 			if (beacons[0].sample_count < MAX_AOA_SAMPLES)
 				beacons[0].sample_count++;
 		}
-		point2d_t new_position;
+		point3d_t new_position;
 		if (estimate_position(position, &new_position))
 		{
 			position = new_position;
-			printk("Estimated position: x = %d, y = %d\n", (int)(position.x * 1000), (int)(position.y * 1000));
+			printk("Estimated position: x = %d, y = %d, z = %d\n", (int)(position.x * 1000), (int)(position.y * 1000), (int)(position.z * 1000));
 		}
 		else
 		{
