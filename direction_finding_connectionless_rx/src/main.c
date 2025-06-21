@@ -13,6 +13,7 @@
 #include "aoa_calc.h"
 #include "ble.h"
 #include "est_pos.h"
+#include "test/aoa_calc_test.h"
 
 static void aoa_cb(double angle)
 {
@@ -24,9 +25,14 @@ static void aoa_cb(double angle)
 	smooth_aoa(angle, &angle_smooth);
 	printk("Smoothed z-axis AoA: %d degrees\n", (int)angle_smooth);
 }
-
+bool test = false;
 int main(void)
 {
+	if (test)
+	{
+		aoa_calc_test();
+		return 0;
+	}
 
 	ble_ctx_t ble;
 	memset(&ble, 0, sizeof(ble));
@@ -80,15 +86,23 @@ int main(void)
 		printk("Periodic sync lost.\n");
 		printk("AoA samples:\n");
 		int idx = own_beacon.write_idx;
-		for (int j = (own_beacon.sample_count - 5) >= 0 ? (own_beacon.sample_count - 5) : 0; j < own_beacon.sample_count; j++)
+		int count = own_beacon.sample_count < 5 ? own_beacon.sample_count : 5;
+		for (int i = 0; i < 5; i++)
 		{
-			int real_idx = (idx + j) % MAX_AOA_SAMPLES;
+			// Calculate the index of the i-th most recent sample
+			int real_idx = (own_beacon.write_idx - count + i + MAX_AOA_SAMPLES) % MAX_AOA_SAMPLES;
 			printk("  %d\n", (int)own_beacon.aoa_samples[real_idx]);
 		}
 
 		printk("Estimating position...\n");
-		beacons[0].aoa_samples[beacons[0].sample_count++] = own_beacon.aoa_samples[own_beacon.write_idx];
-		beacons[0].sample_count++;
+		if (own_beacon.sample_count > 0)
+		{
+			int last_idx = (own_beacon.write_idx - 1 + MAX_AOA_SAMPLES) % MAX_AOA_SAMPLES;
+			beacons[0].aoa_samples[beacons[0].write_idx] = own_beacon.aoa_samples[last_idx];
+			beacons[0].write_idx = (beacons[0].write_idx + 1) % MAX_AOA_SAMPLES;
+			if (beacons[0].sample_count < MAX_AOA_SAMPLES)
+				beacons[0].sample_count++;
+		}
 		point2d_t new_position;
 		if (estimate_position(position, &new_position))
 		{

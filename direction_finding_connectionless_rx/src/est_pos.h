@@ -7,7 +7,6 @@
 #include <stdbool.h>
 #include <zephyr/bluetooth/bluetooth.h>
 
-#define AOA_SAMPLES 3
 #define NUM_BEACONS 1
 
 typedef struct
@@ -19,8 +18,9 @@ typedef struct
 struct beacon_data
 {
     bt_addr_le_t addr;
-    double aoa_samples[AOA_SAMPLES];
+    double aoa_samples[MAX_AOA_SAMPLES];
     int sample_count;
+    int write_idx;
     beacon_t position;
 };
 

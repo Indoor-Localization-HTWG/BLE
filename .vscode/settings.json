@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "regex": "c"
+        "regex": "c",
+        "aoa_calc_test.h": "c"
     }
 }

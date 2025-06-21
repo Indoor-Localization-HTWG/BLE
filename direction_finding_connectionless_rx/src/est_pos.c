@@ -27,7 +27,9 @@ void total_cost(point2d_t p, double *cost)
         double sum_angle = 0.0f;
         for (int j = 0; j < n; j++)
         {
-            sum_angle += beacons[i].aoa_samples[j];
+            // Calculate the index of the j-th most recent sample
+            int idx = (beacons[i].write_idx - n + j + MAX_AOA_SAMPLES) % MAX_AOA_SAMPLES;
+            sum_angle += beacons[i].aoa_samples[idx];
         }
         double avg_angle = sum_angle / n;
         double dist;
@@ -57,13 +59,16 @@ void compute_gradient(point2d_t p, point2d_t *grad)
 
     grad->x = (cost_x_plus - cost_x_minus) / (2.0f * h);
     grad->y = (cost_y_plus - cost_y_minus) / (2.0f * h);
+    // printk("Gradient: grad_x = %d e-2, grad_y = %d e-2\n",
+    //        (int)(grad->x * 100), (int)(grad->y * 100));
 }
 
 // Returns true if successful, false if not enough data
 bool gradient_descent(point2d_t prev_xy, point2d_t *est_xy)
 {
+    double learning_rate = 0.08f;
     int max_iterations = 50;
-    double epsilon = 1e-1f;
+    double epsilon = 1e-3f;
     int i = 0;
     point2d_t grad;
     double norm = INFINITY;
@@ -82,11 +87,10 @@ bool gradient_descent(point2d_t prev_xy, point2d_t *est_xy)
 
     do
     {
-        double learning_rate = 0.01f;
         compute_gradient(p, &grad);
         norm = sqrtf(grad.x * grad.x + grad.y * grad.y);
-        printk("Iteration %d: x = %d, y = %d, grad_x = %d, grad_y = %d, norm = %d\n",
-               i, (int)(p.x * 1000), (int)(p.y * 1000), (int)(grad.x * 1000), (int)(grad.y * 1000), (int)(norm * 1000000));
+        // printk("Iteration %d: x = %d, y = %d, grad_x = %d, grad_y = %d, norm = %d\n",
+        //        i, (int)(p.x * 1000), (int)(p.y * 1000), (int)(grad.x * 1000), (int)(grad.y * 1000), (int)(norm * 1000000));
         p.x -= learning_rate * grad.x;
         p.y -= learning_rate * grad.y;
     } while (++i < max_iterations && norm > epsilon);
@@ -107,7 +111,9 @@ void init_beacons(void)
     for (int i = 0; i < NUM_BEACONS; i++)
     {
         bt_addr_le_from_str("FA:23:5E:09:F1:39", "random", &beacons[i].addr);
-        beacons[i].position = (beacon_t){{0.0f, 0.0f}, 0};
+        beacons[i].position = (beacon_t){{0.0, 0.0}, 0};
         beacons[i].sample_count = 0;
+        beacons[i].write_idx = 0;
+        memset(beacons[i].aoa_samples, 0, sizeof(beacons[i].aoa_samples));
     }
 }

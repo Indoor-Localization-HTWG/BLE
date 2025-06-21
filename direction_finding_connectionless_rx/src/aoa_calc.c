@@ -12,20 +12,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-#ifndef SPEED_OF_LIGHT
-#define SPEED_OF_LIGHT 299792458.0f
-#endif
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-#define BLE_FREQ 2.402e9f // Hz (for channel 37)
-#define LAMBDA (SPEED_OF_LIGHT / BLE_FREQ)
-#define D 0.055f // Antenna spacing (meters)
-
-#define REFERENCE_SAMPLES 16
-#define ANTENNA_PATTERN_LEN 16
-
-#define AOA_SMOOTH_WINDOW 8
 static double aoa_window[AOA_SMOOTH_WINDOW];
 static int aoa_idx = 0;
 static int aoa_count = 0;
@@ -55,12 +41,13 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report,
 
 	for (int i = 0; i < max_antennas; i++)
 	{
-		int idx = REFERENCE_SAMPLES + i;
+		int idx = i;
 		int I = report->sample[idx].i;
 		int Q = report->sample[idx].q;
 		if (I == 0 && Q == 0)
 			continue; // skip zero IQ
 		phases[valid_count++] = atan2f(Q, I);
+		printk("Antenna %d: I=%d, Q=%d, Phase=%d e-2 rad\n", i, I, Q, (int)(phases[valid_count - 1] * 100));
 	}
 
 	if (valid_count < 2)
