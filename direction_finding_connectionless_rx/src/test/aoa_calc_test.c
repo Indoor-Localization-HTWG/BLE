@@ -36,37 +36,34 @@ void aoa_calc_test(void)
     struct bt_df_per_adv_sync_iq_samples_report report;
     memset(&report, 0, sizeof(report));
 
-    // Simulate a signal arriving at 30 degrees
-    double aoa_deg = 30.0;
-    double aoa_rad = aoa_deg * M_PI / 180.0;
-
-    // Calculate phase step between antennas for this AoA
-    double phase_step_rad = (2.0 * M_PI * D / LAMBDA) * sin(aoa_rad);
-
-    fill_test_iq_report(&report, phase_step_rad);
-
-    double angle;
-    bool ok = calculate_aoa(&report, ANTENNA_PATTERN_LEN, &angle);
-
-    if (ok)
+    for (int i = -5; i <= 5; i++)
     {
-        printk("Simulated AoA: %d e-2 deg\n", (int)(aoa_deg * 100));
-        printk("Simulated iq samples:\n");
-        for (int i = 0; i < NUM_SAMPLES; i++)
+        double aoa_deg = 18.0 * i;
+        double aoa_rad = aoa_deg * M_PI / 180.0;
+
+        // Calculate phase step between antennas for this AoA
+        double phase_step_rad = (2.0 * M_PI * D / LAMBDA) * sin(aoa_rad);
+
+        fill_test_iq_report(&report, phase_step_rad);
+
+        double angle;
+        bool ok = calculate_aoa(&report, ANTENNA_PATTERN_LEN, &angle);
+
+        if (ok)
         {
-            printk("Sample %d: I=%d, Q=%d\n", i, report.sample[i].i, report.sample[i].q);
+            printk("Simulated AoA: %d e-2 deg\n", (int)(aoa_deg * 100));
+            printk("Simulated iq samples:\n");
+            for (int i = 0; i < NUM_SAMPLES; i++)
+            {
+                printk("Sample %d: I=%d, Q=%d\n", i, report.sample[i].i, report.sample[i].q);
+            }
+            printk("Calculated AoA: %d e-2 deg\n", (int)(angle * 100));
         }
-        printk("Calculated AoA: %d e-2 deg\n", (int)(angle * 100));
+        else
+        {
+            printk("AoA calculation failed\n");
+        }
     }
-    else
-    {
-        printk("AoA calculation failed\n");
-    }
-
-    rot3d_t smoothed;
-    smooth_aoa(angle, &smoothed);
-    printk("Smoothed AoA: %d e-2 deg\n", (int)(smoothed.yaw * 100));
-    printk("Smoothed pitch: %d e-2 deg\n", (int)(smoothed.pitch * 100));
 
     printk("AoA calculation test done\n");
 }
