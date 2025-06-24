@@ -8,8 +8,8 @@
 #define ADV_DATA_HEX_STR_LEN_MAX (BT_GAP_ADV_MAX_EXT_ADV_DATA_LEN * 2 + 1)
 
 #if defined(CONFIG_BT_DF_CTE_RX_AOA)
-const static uint8_t ant_patterns[] = {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8,
-                                       0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF};
+const static uint8_t ant_patterns[] = {0x5, 0x4, 0x7, 0x6, 0x1, 0x0, 0x3, 0x2, // Antenna switching pattern
+                                       0xD, 0xC, 0xF, 0xE, 0x9, 0x8, 0xB, 0xA};
 #endif
 
 static ble_ctx_t *ble_ctx_ptr = NULL;
@@ -88,8 +88,8 @@ static void cte_recv_cb(struct bt_le_per_adv_sync *sync, const struct bt_df_per_
     ble_ctx_t *ctx = ble_ctx_ptr;
     double angle;
     // You must provide your own AoA calculation function!
-    extern bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, uint8_t num_antennas, double *angle_deg);
-    if (!calculate_aoa(report, 16, &angle))
+    extern bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, double *angle_deg);
+    if (!calculate_aoa(report, &angle))
     {
         printk("AoA calculation failed\n");
         return;

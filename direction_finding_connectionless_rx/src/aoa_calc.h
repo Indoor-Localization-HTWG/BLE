@@ -12,15 +12,15 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#define BLE_FREQ 2.402e9f // Hz (for channel 37)
+#define BLE_FREQ 2.44e9f // Hz (for channel 37)
 #define LAMBDA (SPEED_OF_LIGHT / BLE_FREQ)
-#define D 0.055f // Antenna spacing (meters)
+#define D 0.05f // Antenna spacing (meters)
 
-#define REFERENCE_SAMPLES 16
 #define ANTENNA_PATTERN_LEN 16
 
 #define AOA_SMOOTH_WINDOW 8
 #define MAX_AOA_SAMPLES 32
+#define REFFERENCE_SAMPLES 8
 
 typedef struct
 {
@@ -54,8 +54,7 @@ struct own_beacon_data
 extern struct own_beacon_data own_beacon;
 
 // All functions now use return parameters and return void or bool for success
-bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report,
-				   uint8_t num_antennas, double *angle_deg);
+bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, double *angle_deg);
 double normalize_angle_180(double angle);
 double deg2rad(double deg);
 bool gradient_descent(point3d_t prev_xy, point3d_t *est_xy);

@@ -47,7 +47,7 @@ void aoa_calc_test(void)
         fill_test_iq_report(&report, phase_step_rad);
 
         double angle;
-        bool ok = calculate_aoa(&report, ANTENNA_PATTERN_LEN, &angle);
+        bool ok = calculate_aoa(&report, &angle);
 
         if (ok)
         {

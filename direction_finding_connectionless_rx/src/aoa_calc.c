@@ -32,49 +32,134 @@ double normalize_angle_180(double angle)
 	return norm - 180.0;
 }
 
-// Returns true if AoA could be calculated, false otherwise
-bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report,
-				   uint8_t max_antennas, double *angle_deg)
+void calculate_yaw(double *phases, double *angle_deg)
 {
-	double phases[ANTENNA_PATTERN_LEN];
-	int valid_count = 0;
 
-	for (int i = 0; i < max_antennas; i++)
+	double avg_delta_yaw = 0.0;
+	/**
+	 * Calculate the average phase difference
+	 * only compare samples that are in the same row
+	 * e.g. skip phases[4]-phases[0], phases[8]-phases[7], ...
+	 */
+	int num_delta_phases = 0;
+	for (int i = 0; i < REFFERENCE_SAMPLES - 1; i++)
 	{
-		int idx = i;
-		int I = report->sample[idx].i;
-		int Q = report->sample[idx].q;
-		if (I == 0 && Q == 0)
-			continue; // skip zero IQ
-		phases[valid_count++] = atan2f(Q, I);
-		printk("Antenna %d: I=%d, Q=%d, Phase=%d e-2 rad\n", i, I, Q, (int)(phases[valid_count - 1] * 100));
+		if (i >> 2 == 0)
+		{
+			continue;
+		}
+		num_delta_phases++;
+		double delta_yaw = phases[i + 1] - phases[i];
+		if (delta_yaw < -M_PI)
+			delta_yaw += 2 * M_PI;
+		if (delta_yaw > M_PI)
+			delta_yaw -= 2 * M_PI;
+		avg_delta_yaw += delta_yaw;
 	}
+	avg_delta_yaw /= num_delta_phases;
 
-	if (valid_count < 2)
-	{
-		printk("Not enough valid samples to calculate AoA\n");
-		return false;
-	}
-
-	double avg_delta_phi = 0.0;
-	for (int i = 0; i < valid_count - 1; i++)
-	{
-		double delta = phases[i + 1] - phases[i];
-		if (delta > M_PI)
-			delta -= 2 * M_PI;
-		if (delta < -M_PI)
-			delta += 2 * M_PI;
-		avg_delta_phi += delta;
-	}
-	avg_delta_phi /= (valid_count - 1);
-
-	double x = (avg_delta_phi * LAMBDA) / (2 * M_PI * D);
+	/**
+	 * Calculate the angle
+	 * and normalize it to the range [-180, 180]
+	 */
+	double x = (avg_delta_yaw * LAMBDA) / (2 * M_PI * D);
 	if (x > 1.0)
 		x = 1.0;
 	if (x < -1.0)
 		x = -1.0;
 	double angle_rad = asinf(x);
 	*angle_deg = angle_rad * 180.0 / M_PI;
+	return;
+}
+
+void calculate_pitch(double *phases, double *angle_deg)
+{
+	double avg_delta_pitch = 0.0;
+	int num_delta_phases = 0;
+	/**
+	 * Calculate the average phase difference
+	 * only compare samples that are in the same column
+	 */
+	for (int col = 0; col < 3; col++)
+	{
+		for (int row = 0; row < 3; row++)
+		{
+			int idx1 = row * 4 + col;
+			int idx2 = (row + 1) * 4 + col;
+			double delta_pitch = phases[(row + 1) * 4 + col] - phases[row * 4 + col];
+			if (delta_pitch < -M_PI)
+				delta_pitch += 2 * M_PI;
+			if (delta_pitch > M_PI)
+				delta_pitch -= 2 * M_PI;
+			avg_delta_pitch += delta_pitch;
+			num_delta_phases++;
+		}
+	}
+	avg_delta_pitch /= num_delta_phases;
+
+	/**
+	 * Calculate the angle
+	 * and normalize it to the range [-180, 180]
+	 */
+	double x = (avg_delta_pitch * LAMBDA) / (2 * M_PI * D);
+	if (x > 1.0)
+		x = 1.0;
+	if (x < -1.0)
+		x = -1.0;
+	double angle_rad = asinf(x);
+	*angle_deg = angle_rad * 180.0 / M_PI;
+}
+
+// Returns true if AoA could be calculated, false otherwise
+bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, rot3d_t *angle_deg)
+{
+	double phases[ANTENNA_PATTERN_LEN];
+
+	if (report->sample_count < 2)
+	{
+		printk("Not enough valid samples to calculate AoA\n");
+		return false;
+	}
+
+	double avg_iq[ANTENNA_PATTERN_LEN][2] = {0};
+
+	/**
+	 * map each phase to an antenna
+	 * the first 8 samples are the refference period
+	 */
+	for (int i = 0; i < report->sample_count - 1; i++)
+	{
+		avg_iq[(i - 8) % 16][0] += report->sample[i].i / 2.0;
+	}
+
+	/**
+	 * Calculate the refference phase
+	 * to calculate the base offset for the CTE
+	 */
+	double ref_phase = 0.0;
+	for (int i = 0; i < 8; i++)
+	{
+		ref_phase += phases[i];
+	}
+	ref_phase /= 8.0;
+
+	/**
+	 * iterate over all samples and calculate the phase for each I, Q pair
+	 * and normalize it to the refference phase
+	 */
+	for (int i = 0; i < report->sample_count; i++)
+	{
+		int I = avg_iq[i][0];
+		int Q = avg_iq[i][1];
+		phases[i] = atan2f(Q, I) - ref_phase;
+		printk("Antenna %d: I=%d, Q=%d, Phase=%d e-2 rad\n", i, I, Q, (int)(phases[i - 1] * 100));
+	}
+	double yaw = 0.0;
+	calculate_yaw(phases, &yaw);
+	double pitch = 0.0;
+	calculate_pitch(phases, &pitch);
+	angle_deg->yaw = yaw;
+	angle_deg->pitch = pitch;
 	return true;
 }
 
