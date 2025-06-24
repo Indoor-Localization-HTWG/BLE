@@ -54,7 +54,7 @@ struct own_beacon_data
 extern struct own_beacon_data own_beacon;
 
 // All functions now use return parameters and return void or bool for success
-bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, double *angle_deg);
+bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, rot3d_t *angle_deg);
 double normalize_angle_180(double angle);
 double deg2rad(double deg);
 bool gradient_descent(point3d_t prev_xy, point3d_t *est_xy);

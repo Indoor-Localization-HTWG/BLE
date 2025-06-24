@@ -46,7 +46,7 @@ void aoa_calc_test(void)
 
         fill_test_iq_report(&report, phase_step_rad);
 
-        double angle;
+        rot3d_t angle;
         bool ok = calculate_aoa(&report, &angle);
 
         if (ok)
@@ -57,7 +57,8 @@ void aoa_calc_test(void)
             {
                 printk("Sample %d: I=%d, Q=%d\n", i, report.sample[i].i, report.sample[i].q);
             }
-            printk("Calculated AoA: %d e-2 deg\n", (int)(angle * 100));
+            printk("Calculated AoA-yaw: %d e-2 deg\n", (int)(angle.yaw * 100));
+            printk("Calculated AoA-pitch: %d e-2 deg\n", (int)(angle.pitch * 100));
         }
         else
         {

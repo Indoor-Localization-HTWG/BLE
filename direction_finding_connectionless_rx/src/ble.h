@@ -7,8 +7,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <zephyr/kernel.h>
+#include "aoa_calc.h"
 
-typedef void (*ble_aoa_report_cb_t)(double angle);
+typedef void (*ble_aoa_report_cb_t)(rot3d_t angle);
 
 typedef struct
 {

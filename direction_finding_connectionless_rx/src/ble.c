@@ -2,6 +2,7 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/util.h>
 #include <string.h>
+#include "aoa_calc.h"
 
 #define NAME_LEN 30
 #define SYNC_CREATE_TIMEOUT_INTERVAL_NUM 10
@@ -86,9 +87,9 @@ static void recv_cb(struct bt_le_per_adv_sync *sync, const struct bt_le_per_adv_
 static void cte_recv_cb(struct bt_le_per_adv_sync *sync, const struct bt_df_per_adv_sync_iq_samples_report *report)
 {
     ble_ctx_t *ctx = ble_ctx_ptr;
-    double angle;
+    rot3d_t angle;
     // You must provide your own AoA calculation function!
-    extern bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, double *angle_deg);
+    extern bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, rot3d_t *angle_deg);
     if (!calculate_aoa(report, &angle))
     {
         printk("AoA calculation failed\n");
