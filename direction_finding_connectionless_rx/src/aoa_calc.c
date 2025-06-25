@@ -32,7 +32,7 @@ double normalize_angle_180(double angle)
 	return norm - 180.0;
 }
 
-void calculate_yaw(double *phases, double *angle_deg)
+void calculate_yaw(int samplesize, double *phases, double *angle_deg)
 {
 
 	double avg_delta_yaw = 0.0;
@@ -42,7 +42,7 @@ void calculate_yaw(double *phases, double *angle_deg)
 	 * e.g. skip phases[4]-phases[0], phases[8]-phases[7], ...
 	 */
 	int num_delta_phases = 0;
-	for (int i = 0; i < REFFERENCE_SAMPLES - 1; i++)
+	for (int i = 0; i < samplesize; i++)
 	{
 		if (i >> 2 == 0)
 		{
@@ -147,7 +147,7 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, ro
 	 * iterate over all samples and calculate the phase for each I, Q pair
 	 * and normalize it to the refference phase
 	 */
-	for (int i = 0; i < report->sample_count; i++)
+	for (int i = REFFERENCE_SAMPLES; i < report->sample_count; i++)
 	{
 		int I = avg_iq[i][0];
 		int Q = avg_iq[i][1];
@@ -155,7 +155,7 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, ro
 		printk("Antenna %d: I=%d, Q=%d, Phase=%d e-2 rad\n", i, I, Q, (int)(phases[i - 1] * 100));
 	}
 	double yaw = 0.0;
-	calculate_yaw(phases, &yaw);
+	calculate_yaw(report->sample_count - REFFERENCE_SAMPLES, phases, &yaw);
 	double pitch = 0.0;
 	calculate_pitch(phases, &pitch);
 	angle_deg->yaw = yaw;

@@ -7,13 +7,14 @@ struct beacon_data beacons[NUM_BEACONS];
 
 void distance_to_plane(point3d_t p, point3d_t beacon, double yaw_deg, double pitch_deg, double *dist)
 {
-    double az = deg2rad(yaw_deg);
-    double el = deg2rad(pitch_deg);
+    printk("Calculating distance to plane");
+    double yaw = deg2rad(yaw_deg);
+    double pitch = deg2rad(pitch_deg);
 
     // Normal vector from yaw/pitch
-    double nx = cos(el) * cos(az);
-    double ny = cos(el) * sin(az);
-    double nz = sin(el);
+    double nx = cos(pitch) * cos(yaw);
+    double ny = cos(pitch) * sin(yaw);
+    double nz = sin(pitch);
 
     // Vector from beacon to point
     double dx = p.x - beacon.x;
@@ -24,8 +25,9 @@ void distance_to_plane(point3d_t p, point3d_t beacon, double yaw_deg, double pit
     *dist = dx * nx + dy * ny + dz * nz;
 }
 
-void total_cost(point3d_t p, double *cost)
+static inline void total_cost(point3d_t p, double *cost)
 {
+    printk("Calculating cost");
     *cost = 0.0f;
     for (int i = 0; i < NUM_BEACONS; i++)
     {
@@ -57,6 +59,7 @@ void total_cost(point3d_t p, double *cost)
 
 void compute_gradient(point3d_t p, point3d_t *grad)
 {
+    printk("Computing gradient");
     double h = 0.001f;
     point3d_t p_x_plus = {p.x + h, p.y, p.z};
     point3d_t p_x_minus = {p.x - h, p.y, p.z};
@@ -66,6 +69,8 @@ void compute_gradient(point3d_t p, point3d_t *grad)
     point3d_t p_z_minus = {p.x, p.y, p.z - h};
 
     double cost_x_plus, cost_x_minus, cost_y_plus, cost_y_minus, cost_z_plus, cost_z_minus;
+    printk("Calculating costs for gradient");
+    printk("p_x_plus: %d, %d, %d", p_x_plus.x, p_x_plus.y, p_x_plus.z);
     total_cost(p_x_plus, &cost_x_plus);
     total_cost(p_x_minus, &cost_x_minus);
     total_cost(p_y_plus, &cost_y_plus);
