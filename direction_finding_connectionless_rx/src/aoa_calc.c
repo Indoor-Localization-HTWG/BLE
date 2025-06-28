@@ -127,9 +127,9 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, ro
 	 * map each phase to an antenna
 	 * the first 8 samples are the refference period
 	 */
-	for (int i = 0; i < report->sample_count - 1; i++)
+	for (int i = REFFERENCE_SAMPLES; i < report->sample_count - ((report->sample_count - REFFERENCE_SAMPLES)%16); i++)
 	{
-		avg_iq[(i - 8) % 16][0] += report->sample[i].i / 2.0;
+		avg_iq[(i - 8) % 16][0] += report->sample[i].i / ((int)((report->sample_count - REFFERENCE_SAMPLES)/16));
 	}
 
 	/**
