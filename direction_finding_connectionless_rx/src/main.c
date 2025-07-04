@@ -107,15 +107,15 @@ int main(void)
 				beacons[0].sample_count++;
 		}
 		point3d_t new_position;
-		if (estimate_position(position, &new_position))
-		{
-			position = new_position;
-			printk("Estimated position: x = %d, y = %d, z = %d\n", (int)(position.x * 1000), (int)(position.y * 1000), (int)(position.z * 1000));
-		}
-		else
-		{
-			printk("Position estimation failed.\n");
-		}
+		// if (estimate_position(position, &new_position))
+		// {
+		// 	position = new_position;
+		// 	printk("Estimated position: x = %d, y = %d, z = %d\n", (int)(position.x * 1000), (int)(position.y * 1000), (int)(position.z * 1000));
+		// }
+		// else
+		// {
+		// 	printk("Position estimation failed.\n");
+		// }
 
 	} while (true);
 

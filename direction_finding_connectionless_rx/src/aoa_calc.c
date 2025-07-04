@@ -113,6 +113,10 @@ void calculate_pitch(double *phases, double *angle_deg)
 // Returns true if AoA could be calculated, false otherwise
 bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, rot3d_t *angle_deg)
 {
+	for (int i = 0; i < report->sample_count; i++)
+	{
+		printk("IQ[%d]: %d, %d\n", i, report->sample[i].i, report->sample[i].q);
+	}
 	double phases[ANTENNA_PATTERN_LEN];
 
 	if (report->sample_count < 2)
@@ -127,9 +131,9 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, ro
 	 * map each phase to an antenna
 	 * the first 8 samples are the refference period
 	 */
-	for (int i = REFFERENCE_SAMPLES; i < report->sample_count - ((report->sample_count - REFFERENCE_SAMPLES)%16); i++)
+	for (int i = REFFERENCE_SAMPLES; i < report->sample_count - ((report->sample_count - REFFERENCE_SAMPLES) % 16); i++)
 	{
-		avg_iq[(i - 8) % 16][0] += report->sample[i].i / ((int)((report->sample_count - REFFERENCE_SAMPLES)/16));
+		avg_iq[(i - 8) % 16][0] += report->sample[i].i / ((int)((report->sample_count - REFFERENCE_SAMPLES) / 16));
 	}
 
 	/**
@@ -152,7 +156,7 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, ro
 		int I = avg_iq[i][0];
 		int Q = avg_iq[i][1];
 		phases[i] = atan2f(Q, I) - ref_phase;
-		printk("Antenna %d: I=%d, Q=%d, Phase=%d e-2 rad\n", i, I, Q, (int)(phases[i - 1] * 100));
+		// printk("Antenna %d: I=%d, Q=%d, Phase=%d e-2 rad\n", i, I, Q, (int)(phases[i - 1] * 100));
 	}
 	double yaw = 0.0;
 	calculate_yaw(report->sample_count - REFFERENCE_SAMPLES, phases, &yaw);

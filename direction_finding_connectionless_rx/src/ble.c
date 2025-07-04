@@ -1,6 +1,9 @@
 #include "ble.h"
 #include <zephyr/sys/printk.h>
 #include <zephyr/sys/util.h>
+#include <zephyr/bluetooth/direction.h>
+#include <zephyr/bluetooth/hci.h>
+#include <zephyr/bluetooth/hci_vs.h>
 #include <string.h>
 #include "aoa_calc.h"
 
@@ -9,9 +12,13 @@
 #define ADV_DATA_HEX_STR_LEN_MAX (BT_GAP_ADV_MAX_EXT_ADV_DATA_LEN * 2 + 1)
 
 #if defined(CONFIG_BT_DF_CTE_RX_AOA)
-const static uint8_t ant_patterns[] = {0x5, 0x4, 0x7, 0x6, 0x1, 0x0, 0x3, 0x2, // Antenna switching pattern
-                                       0xD, 0xC, 0xF, 0xE, 0x9, 0x8, 0xB, 0xA};
+const static uint8_t ant_patterns[] = {
+    0x5, 0x4
+    // 0x5, 0x4, 0x7, 0x6, 0x1, 0x0, 0x3, 0x2, // Antenna switching pattern
+    // 0xD, 0xC, 0xF, 0xE, 0x9, 0x8, 0xB, 0xA
+};
 #endif
+int num = 0;
 
 static ble_ctx_t *ble_ctx_ptr = NULL;
 

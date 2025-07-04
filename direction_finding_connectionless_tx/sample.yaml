@@ -5,10 +5,14 @@ tests:
     harness: bluetooth
     platform_allow:
       - nrf52833dk/nrf52833
+      - nrf5340dk/nrf5340/cpuapp
     tags: bluetooth
     integration_platforms:
       - nrf52833dk/nrf52833
+      - nrf5340dk/nrf5340/cpuapp
     platform_allow:
       - nrf52833dk/nrf52833
+      - nrf5340dk/nrf5340/cpuapp
     integration_platforms:
       - nrf52833dk/nrf52833
+      - nrf5340dk/nrf5340/cpuapp
