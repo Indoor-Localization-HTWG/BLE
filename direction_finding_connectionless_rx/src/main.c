@@ -24,8 +24,8 @@ static void aoa_cb(double yaw, double pitch)
 		own_beacon.sample_count++;
 	double angle_smooth;
 	smooth_aoa(yaw, pitch, &angle_smooth);
-	printk("Smoothed yaw AoA: %d degrees\n", (int)angle_smooth);
-	printk("Smoothed pitch AoA: %d degrees\n", (int)pitch);
+	printf("Smoothed yaw AoA: %.3f degrees\n", (int)angle_smooth);
+	printf("Smoothed pitch AoA: %.3f degrees\n", (int)pitch);
 }
 bool test = false;
 int main(void)

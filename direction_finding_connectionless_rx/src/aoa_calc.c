@@ -32,82 +32,11 @@ double normalize_angle_180(double angle)
 	return norm - 180.0;
 }
 
-void calculate_yaw(int samplesize, double *phases, double *angle_deg)
+double phase_diff_to_angle(double phase_diff)
 {
-
-	double avg_delta_yaw = 0.0;
-	/**
-	 * Calculate the average phase difference
-	 * only compare samples that are in the same row
-	 * e.g. skip phases[4]-phases[0], phases[8]-phases[7], ...
-	 */
-	int num_delta_phases = 0;
-	for (int i = 0; i < samplesize; i++)
-	{
-		if (i >> 2 == 0)
-		{
-			continue;
-		}
-		num_delta_phases++;
-		double delta_yaw = phases[i + 1] - phases[i];
-		if (delta_yaw < -M_PI)
-			delta_yaw += 2 * M_PI;
-		if (delta_yaw > M_PI)
-			delta_yaw -= 2 * M_PI;
-		avg_delta_yaw += delta_yaw;
-	}
-	avg_delta_yaw /= num_delta_phases;
-
-	/**
-	 * Calculate the angle
-	 * and normalize it to the range [-180, 180]
-	 */
-	double x = (avg_delta_yaw * LAMBDA) / (2 * M_PI * D);
-	if (x > 1.0)
-		x = 1.0;
-	if (x < -1.0)
-		x = -1.0;
-	double angle_rad = asinf(x);
-	*angle_deg = angle_rad * 180.0 / M_PI;
-	return;
-}
-
-void calculate_pitch(double *phases, double *angle_deg)
-{
-	double avg_delta_pitch = 0.0;
-	int num_delta_phases = 0;
-	/**
-	 * Calculate the average phase difference
-	 * only compare samples that are in the same column
-	 */
-	for (int col = 0; col < 3; col++)
-	{
-		for (int row = 0; row < 3; row++)
-		{
-			int idx1 = row * 4 + col;
-			int idx2 = (row + 1) * 4 + col;
-			double delta_pitch = phases[(row + 1) * 4 + col] - phases[row * 4 + col];
-			if (delta_pitch < -M_PI)
-				delta_pitch += 2 * M_PI;
-			if (delta_pitch > M_PI)
-				delta_pitch -= 2 * M_PI;
-			avg_delta_pitch += delta_pitch;
-			num_delta_phases++;
-		}
-	}
-	avg_delta_pitch /= num_delta_phases;
-
-	/**
-	 * Calculate the angle
-	 * and normalize it to the range [-180, 180]
-	 */
-	double x = (avg_delta_pitch * LAMBDA) / (2 * M_PI * D);
-	if (x > 1.0)
-		x = 1.0;
-	if (x < -1.0)
-		x = -1.0;
-	double angle_rad = asinf(x);
-	*angle_deg = angle_rad * 180.0 / M_PI;
+	phase_diff = normalize_angle_180(phase_diff);
+	printf("Normaliszed phase_diff: %.3f\n", phase_diff);
+	return (phase_diff * LAMBDA) / (2.0 * M_PI * D);
 }
 
 // Returns true if AoA could be calculated, false otherwise
@@ -117,53 +46,36 @@ bool calculate_aoa(const struct bt_df_per_adv_sync_iq_samples_report *report, ro
 	{
 		printk("IQ[%d]: %d, %d\n", i, report->sample[i].i, report->sample[i].q);
 	}
-	double phases[ANTENNA_PATTERN_LEN];
-
-	if (report->sample_count < 2)
+	double phase_diff = 0.0;
+	int ant1_i = 0;
+	int and2_i = 0;
+	int ant1_q = 0;
+	int and2_q = 0;
+	double ant1_angle = 0.0;
+	double ant2_angle = 0.0;
+	int cnt = 0;
+	for (int i = REFFERENCE_SAMPLES; i < report->sample_count; i += 2)
 	{
-		printk("Not enough valid samples to calculate AoA\n");
-		return false;
+		cnt++;
+		ant1_i = report->sample[i].i;
+		and2_i = report->sample[i + 1].i;
+		ant1_q = report->sample[i].q;
+		and2_q = report->sample[i + 1].q;
+		ant1_angle = atan2f(ant1_q, ant1_i);
+		ant2_angle = atan2f(and2_q, and2_i);
+		phase_diff += ant2_angle - ant1_angle;
+		printf("Sample %d: Ant1 Angle: %.3f, Ant2 Angle: %.3f, Phase Diff: %.3f\n",
+			   i, ant1_angle, ant2_angle, phase_diff);
 	}
-
-	double avg_iq[ANTENNA_PATTERN_LEN][2] = {0};
+	phase_diff /= cnt;
+	printf("Phase difference: %.3f\n", phase_diff);
 
 	/**
-	 * map each phase to an antenna
-	 * the first 8 samples are the refference period
+	 * calculate the angle in deg
 	 */
-	for (int i = REFFERENCE_SAMPLES; i < report->sample_count - ((report->sample_count - REFFERENCE_SAMPLES) % 16); i++)
-	{
-		avg_iq[(i - 8) % 16][0] += report->sample[i].i / ((int)((report->sample_count - REFFERENCE_SAMPLES) / 16));
-	}
-
-	/**
-	 * Calculate the refference phase
-	 * to calculate the base offset for the CTE
-	 */
-	double ref_phase = 0.0;
-	for (int i = 0; i < 8; i++)
-	{
-		ref_phase += phases[i];
-	}
-	ref_phase /= 8.0;
-
-	/**
-	 * iterate over all samples and calculate the phase for each I, Q pair
-	 * and normalize it to the refference phase
-	 */
-	for (int i = REFFERENCE_SAMPLES; i < report->sample_count; i++)
-	{
-		int I = avg_iq[i][0];
-		int Q = avg_iq[i][1];
-		phases[i] = atan2f(Q, I) - ref_phase;
-		// printk("Antenna %d: I=%d, Q=%d, Phase=%d e-2 rad\n", i, I, Q, (int)(phases[i - 1] * 100));
-	}
-	double yaw = 0.0;
-	calculate_yaw(report->sample_count - REFFERENCE_SAMPLES, phases, &yaw);
-	double pitch = 0.0;
-	calculate_pitch(phases, &pitch);
-	angle_deg->yaw = yaw;
-	angle_deg->pitch = pitch;
+	angle_deg->pitch = 0.0;
+	angle_deg->yaw = phase_diff_to_angle(phase_diff);
+	printf("AoA Yaw: %.3f degrees\n", angle_deg->yaw);
 	return true;
 }
 

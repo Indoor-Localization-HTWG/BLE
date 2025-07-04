@@ -51,7 +51,8 @@ def serial_handler():
         
         iq = []
         # print data to console
-        print("Reading data from serial port. Press Ctrl+C to stop.")
+        print("Reading data from serial port. Press Ctrl+C to s" \
+        "top.")
         while True:
             line = ser.readline().decode('utf-8').strip()
             if not line:
